@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="teamName">{{t.teamName}}</h2>
+
+<table class="players">
+	<thead><th>Players</th></thead>
+{% for player in p %}
+<tr class="playerinfo"><td class="playername"> <a href="/ols/p/{{player.SummonerNumber}}">{{player.PlayerIGN}}</a></td> <td class="realname">{{player.PlayerName}}</td> <td> <a href="http://na.op.gg/summoner/userName={{player.PlayerIGN}}">op</a></td> </tr>
+
+{% endfor %}
+</table>
+<br /><br />
+<table class="game">
+	<thead> <th> Game List</th></thead>
+{% for game in gs %}
+
+<tr class="gameinfo"> <td class="gamelink"> <a href="/ols/m/{{game.game.Number}}">{{game.t1}} Vs {{game.t2}} </a></td> <td class="winorlose">  - {{game.won}} </td></tr>
+
+{% endfor %}
+
+</table>	
+
+
+{% endblock %}

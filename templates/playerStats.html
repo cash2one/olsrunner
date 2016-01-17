@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1> {{player.PlayerIGN}}'s stats</h1>
+<h3> Team: {{team.teamName}}</h3>
+<h3><a href="http://na.op.gg/summoner/userName={{player.PlayerIGN}}">op.gg </a></h3>
+<br  />
+Kills: {{stats.Kills}} <br />
+Deaths: {{stats.Deaths}} <br />
+Assists: {{stats.Assists}} <br />
+KDA Ratio: {{astats.KDA|floatformat:2}} <br />
+CS per minute (total): {{astats.Csmin|floatformat:3}} ({{stats.Creeps}}) <br />
+Gold per minute (total): {{astats.GPM|floatformat:1}} ({{stats.GoldTotal}})<br />
+
+<br />
+<h3>Games:</h3><br />
+<br />
+{% for g in games %}
+<a href="../../m/{{g.game.Number }}/"> {{g.name}} </a>
+
+{% endfor %}
+
+
+{% endblock %}

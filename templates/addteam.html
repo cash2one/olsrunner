@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form action="../addTeam/" method="post">
+	{% csrf_token %}
+	<input id="Team Name" name="teamname">Team Name</input><br />
+	<input id="Captain" name="cap">Captain</input><br />
+	<input id="Player1" name="P1">Player 1</input><br />
+	<input id="Player2" name="P2">Player 2</input><br />
+	<input id="Player3" name="P3">Player 3</input><br />
+	<input id="Player4" name="P4">Player 4</input><br />
+	<input type="submit" value="OK">
+</form>
+
+{% endblock %}

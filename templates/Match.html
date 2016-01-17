@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{matchinfo}}</h1><br /><br />
+
+<h3><a href="http://matchhistory.na.leagueoflegends.com/en/#match-details/NA1/{{matchinfo.matchID}}/{{matchinfo.team1Player1}}?tab=overview">Official Match History page</a></h3>
+<table class="team1">
+	<thead><td>{{matchinfo.team1name}}</td></thead>
+<tr class="team1player1"> <td class="playername"><a href="/ols/p/{{t1.0.SummonerNumber}}">{{t1.0.PlayerIGN}}</a></td> <td class="KDA">{{game.participants.0.stats.kills}}/{{game.participants.0.stats.deaths}}/{{game.participants.0.stats.assists}}  </td> </tr>
+
+<tr class="team1player2"> <td class="playername"><a href="/ols/p/{{t1.1.SummonerNumber}}">{{t1.1.PlayerIGN}}</a></td> <td class="KDA">{{game.participants.1.stats.kills}}/{{game.participants.1.stats.deaths}}/{{game.participants.1.stats.assists}}  </td> </tr>
+
+<tr class="team1player3"> <td class="playername"><a href="/ols/p/{{t1.2.SummonerNumber}}">{{t1.2.PlayerIGN}}</a></td> <td class="KDA">{{game.participants.2.stats.kills}}/{{game.participants.2.stats.deaths}}/{{game.participants.2.stats.assists}}  </td> </tr>
+
+<tr class="team1player4">  <td class="playername"><a href="/ols/p/{{t1.3.SummonerNumber}}">{{t1.3.PlayerIGN}}</a></td> <td class="KDA">{{game.participants.3.stats.kills}}/{{game.participants.3.stats.deaths}}/{{game.participants.3.stats.assists}}  </td></tr>
+
+<tr class="team1player5"> <td class="playername"><a href="/ols/p/{{t1.4.SummonerNumber}}">{{t1.4.PlayerIGN}}</a></td> <td class="KDA">{{game.participants.4.stats.kills}}/{{game.participants.4.stats.deaths}}/{{game.participants.4.stats.assists}}  </td> </tr>
+</table>
+
+<table class="team2">
+	<thead><td>{{matchinfo.team2name}}</td></thead>
+<tr class="team2player1"> <td class="playername"><a href="/ols/p/{{t2.0.SummonerNumber}}">{{t2.0.PlayerIGN}}</a></td> <td class="KDA">{{game.participants.5.stats.kills}}/{{game.participants.5.stats.deaths}}/{{game.participants.5.stats.assists}}  </td> </tr>
+
+<tr class="team2player2"> <td class="playername"><a href="/ols/p/{{t2.1.SummonerNumber}}">{{t2.1.PlayerIGN}}</a></td> <td class="KDA">{{game.participants.6.stats.kills}}/{{game.participants.6.stats.deaths}}/{{game.participants.6.stats.assists}}  </td> </tr>
+
+<tr class="team2player3"> <td class="playername"><a href="/ols/p/{{t2.2.SummonerNumber}}">{{t2.2.PlayerIGN}}</a></td> <td class="KDA">{{game.participants.7.stats.kills}}/{{game.participants.7.stats.deaths}}/{{game.participants.7.stats.assists}}  </td> </tr>
+
+<tr class="team2player4"> <td class="playername"><a href="/ols/p/{{t2.3.SummonerNumber}}">{{t2.3.PlayerIGN}}</a></td> <td class="KDA">{{game.participants.8.stats.kills}}/{{game.participants.8.stats.deaths}}/{{game.participants.8.stats.assists}}  </td> </tr>
+
+<tr class="team2player5"> <td class="playername"><a href="/ols/p/{{t2.4.SummonerNumber}}">{{t2.4.PlayerIGN}}</a></td> <td class="KDA">{{game.participants.9.stats.kills}}/{{game.participants.9.stats.deaths}}/{{game.participants.9.stats.assists}}  </td> </tr>
+
+
+</table>
+
+
+
+{% endblock %}

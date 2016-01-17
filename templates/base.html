@@ -1,0 +1,66 @@
+<html>
+<head>
+    <title>LoL@Pitt OLS</title>
+{% load staticfiles %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+	<link rel="stylesheet" type="text/css" href="{% static "css/bootstrap.min.css" %}">
+
+	<link rel="stylesheet" type="text/css" href="{% static "css/style.css" %}">
+	  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+
+</head>
+{% block header %}
+
+
+ <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/ols/">OLS Spring 2016</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <a href="/ols/standings">Standings</a>
+                    </li>
+                    <li>
+                        <a href="/ols/schedule">Schedule</a>
+                    </li>
+                    <li>
+                        <a href="/ols/stats">Stats(WIP)</a>
+                    </li>
+                    <li>
+                    	<a href="/accounts/login/">Login</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container -->
+</nav><!-- End of NavBar -->
+{% endblock %}
+
+<div class="container">
+
+<div class="row">
+{% block content %}
+
+{% endblock %}
+</div><!-- End of Row -->
+</div><!-- End of Container -->
+
+ 
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="{% static "js/bootstrap.min.js" %}"></script>
+
+</html>

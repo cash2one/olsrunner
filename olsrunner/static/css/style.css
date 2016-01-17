@@ -1,0 +1,18 @@
+body{
+	background-image: url("/static/img/kids.jpg");
+}
+.row{
+    margin-top: 5.5em;
+}
+.leaguename{
+    background-color: white;
+    font-size: 130%;
+}
+
+.teamrow{
+    background-color: white;
+    color: blue;
+}
+.teampoints{
+    color: black;
+}

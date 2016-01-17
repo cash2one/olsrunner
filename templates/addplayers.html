@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form action="../../ols/addplayerlist/" method="post">
+	{% csrf_token %}
+	<textarea id="Player_list" name="players">Playername: IGN, Player2name: P2IGN</textarea>
+	<input type="submit" value="OK">
+</form>
+
+{% endblock %}

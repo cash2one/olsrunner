@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% load staticfiles %}
+
+<script src="{% static "jquery-ui-1.11.4/jquery-ui.js" %}"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+<script>
+  $(function() {
+    $( ".datepicker" ).datepicker();
+  });
+  </script>
+  <style type="text/css">
+  table {
+        border-collapse: separate;
+        border-spacing: 10px 5px;
+      }
+  </style>
+{% for ele in schedule %}
+<table class="week" id="{{forloop.counter}}"> <thead class="weekanddate"><th> Week {{forloop.counter}} - {{ele.startdate}}</th></thead>
+	{% for key, league in ele.week.items %}
+	<tr class="league"><th id="key">{{key}}</th></tr>
+		{%for game in league%}
+		<tr><td class="team1"><a href="/ols/t/{{game.team1.teamID}}">{{game.team1.teamName}}</a></td><td class="Vs">Vs</td><td class="team2"><a href="/ols/t/{{game.team2.teamID}}">{{game.team2.teamName}}</a></td>
+		<td class="datetime">
+			{% if game.canedit %} 
+			<form action="/ols/reschedule/" method="post">
+				{% csrf_token %}
+				<input type="hidden" name="match" value="{{forloop.parentloop.parentloop.counter}}|{{game.team1.teamID}}"><input name="date" type="text" class="datepicker" value="{{game.date}}"> <input type="text" name="time" class="time" value="{{game.time}}"> <input type="submit" value="Submit">
+			</form>
+			{% else %}
+				{% if game.date.ctime == "Fri Jan 15 00:00:00 2016" %}
+					Not scheduled
+				{%else %}
+				{{game.date}} @ {{game.time}}
+
+				{% endif %}
+			{% endif %}
+		</td>
+			{% if game.canedit and game.date.ctime != "Fri Jan 15 00:00:00 2016" %} 
+			<td>
+				Game 1 Tourney code:  {{game.game1code.code}}
+			</td>
+			<td>
+				Game 1 Tourney code:  {{game.game2code.code}}
+			</td>
+			{% endif %}
+		</tr>
+		{% endfor %}
+	{% endfor %}
+</table>
+<br /><br /><br />
+{% endfor%}
+
+
+
+
+{% endblock %}

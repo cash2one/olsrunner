@@ -77,7 +77,6 @@ class Stats(models.Model):
 			return p.PlayerIGN
 		except ObjectDoesNotExist:
 			riotapi.set_region("NA")
-			riotapi.set_api_key("b41d4581-0400-4c37-99b1-418cd2f6d7ca")
 			s= riotapi.get_summoner_name(self.PlayerID)
 			return s
 

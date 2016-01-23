@@ -7,7 +7,7 @@
 {% for l, values in leagues.items %}
 <div class="col-md-3">
 
-	<table id="{{l}}" class="table table-bordered league"><tbody><tr class="leaguename"><th>{{l}}</th><th>Points</th></tr>
+	<table id="{{l}}" class="table table-bordered league"><tbody><tr class="leaguename"><th>{{l}}</th><td>Points</td></tr>
 		{% for t in values %}
 		<tr class="teamrow"><td class="teamname"><a href="/ols/t/{{t.teamID}}">{{t.teamName}} </a></td><td class="teampoints">{{t.points}}</td></tr>
 		{% endfor %}

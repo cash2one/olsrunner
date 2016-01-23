@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="/static/css/screen.css" />
+
+
+<table id="header-fixed"></table>
+{% load django_tables2 %}
+{% render_table stats %}
+
+<br /><br /><br /><br /><br />
+<script type="text/javascript"> 
+var tableOffset = $("table.paleblue").offset().top -51;
+var $header = $("table.paleblue > thead");
+var $fixedHeader = $("#header-fixed").append($header.clone());
+
+$(window).bind("scroll", function() {
+    var offset = $(this).scrollTop();
+    
+    if (offset >= tableOffset && $fixedHeader.is(":hidden")) {
+        $fixedHeader.show();
+        
+        $.each($header.find('tr > th'), function(ind,val){
+          var original_width = $(val).width();
+          var original_padding = $(val).css("padding");
+          if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1 && $(val).attr('class').indexOf("creeps") > -1) {
+          	original_width = original_width -1
+          }
+          if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1 && $(val).attr('class').indexOf("crit") > -1) {
+          	original_width = original_width +1
+          }
+          if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1 && ind > 0) {
+          	$($fixedHeader.find('tr > th')[ind])
+          	.width(original_width - 11)
+          	.css("padding",original_padding);
+          } else if(navigator.userAgent.toLowerCase().indexOf('firefox') > -1 && ind == 0){
+          	$($fixedHeader.find('tr > th')[ind])
+          	.width(original_width - 10)
+          	.css("padding",original_padding);
+         } else{
+          	$($fixedHeader.find('tr > th')[ind])
+          	.width(original_width)
+          	.css("padding",original_padding);
+      	}
+        });
+    }
+    else if (offset < tableOffset) {
+        $fixedHeader.hide();
+    }
+});
+</script>
+{% endblock %}

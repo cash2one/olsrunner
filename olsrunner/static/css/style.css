@@ -16,3 +16,13 @@ body{
 .teampoints{
     color: black;
 }
+tr.gameinfo {
+	margin-top: 5.5em;
+}
+tr.gameinfo td {
+	margin-right: 10px;
+}
+tr.gameinfo img{
+	width: 50px;
+	height: 50px;
+}

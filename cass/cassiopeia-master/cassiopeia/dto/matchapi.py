@@ -11,12 +11,13 @@ def get_match(id_, include_timeline=True, tournament_code=""):
 
     return              MatchDetail    the match
     """
-    request = "{version}/match/for-tournament/{id_}" if tournament_code else "{version}/match/{id_}"
-    request = request.format(version=cassiopeia.dto.requests.api_versions["match"], id_=id_)
+    request = request.format(version=cassiopeia.dto.requests.api_versions["match"], id_=id_, tournament_code=tournament_code)
 
     params = {"includeTimeline": include_timeline}
     if tournament_code:
         params["tournamentCode"] = tournament_code
+    else:
+        tournament_code = None
 
     return cassiopeia.type.dto.match.MatchDetail(cassiopeia.dto.requests.get(request, params, tournament=bool(tournament_code)))
 

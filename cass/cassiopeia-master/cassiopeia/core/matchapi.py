@@ -22,7 +22,7 @@ def get_match(id_, include_timeline=True, tournament_code=""):
     if match and (match.timeline or not include_timeline):
         return match
 
-    match = cassiopeia.dto.matchapi.get_match(id_, include_timeline, tournament_code)
+    match = cassiopeia.dto.matchapi.get_match(id_, include_timeline=include_timeline, tournament_code=tournament_code)
 
     # Load required data if loading policy is eager
     if cassiopeia.core.requests.load_policy is cassiopeia.type.core.common.LoadPolicy.eager:

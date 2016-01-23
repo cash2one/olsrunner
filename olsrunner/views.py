@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
+from django.http import HttpResponseServerError
 from cassiopeia import riotapi, baseriotapi
 from cassiopeia.dto import tournamentproviderapi
 from cassiopeia.type.core.common import SubType
@@ -14,6 +15,11 @@ from datetime import date, time, timedelta, datetime
 from django.db import connection
 import pickle
 import json
+from django.views.decorators.csrf import csrf_exempt
+import django_tables2 as tables
+from django_tables2   import RequestConfig
+from cassiopeia.type.api.exception import APIError
+import re
 
 def index(request):
 	return HttpResponse(render(request, 'index.html',))
@@ -101,14 +107,14 @@ def addPoints(winner, loser, winnerpos):
 	if winnerpos == 1:
 		gm = Game.objects.filter(team1__iexact= loser.teamID)
 		try:
-			gm = gm.objects.get(team2__iexact= winner.teamID)
+			gm = gm.get(team2__iexact= winner.teamID)
 		except ObjectDoesNotExist:
 			winner.save()
 			return
 	else:
 		gm = Game.objects.filter(team2__iexact=loser.teamID)
 		try:
-			gm = gm.objects.get(team1__iexact=winner.teamID)
+			gm = gm.get(team1__iexact=winner.teamID)
 		except ObjectDoesNotExist:
 			winner.save()
 			return
@@ -124,9 +130,10 @@ def addMatch(request):
 		newgame.team1 = Team.objects.get(teamName__iexact=posted.get('team1name')).teamID
 		newgame.team2 = Team.objects.get(teamName__iexact=posted.get('team2name')).teamID
 		newgame.winner = Team.objects.get(teamName__iexact=posted.get('winner')).teamID
+		print (Game.objects.all().aggregate(Max('Number')))
 		try:
-			newgame.Number = Game.objects.all().aggregate(Max('Number'))['Number'] + 1
-		except KeyError:
+			newgame.Number = Game.objects.all().aggregate(Max('Number'))['Number__max'] + 1
+		except TypeError:
 			newgame.Number = 0
 		riotapi.set_region("NA")
 		m = riotapi.get_match(posted.get('match'))
@@ -179,7 +186,17 @@ def addMatch(request):
 			if player.stats.largest_critical_strike > st.LargestCrit:
 				st.LargestCrit = player.stats.largest_critical_strike
 			st.Creeps = st.Creeps + player.stats.minion_kills + player.stats.monster_kills
-			st.SecondsPlayed = st.SecondsPlayed + m.duration.total_seconds()/60
+			st.SecondsPlayed = st.SecondsPlayed + m.duration.total_seconds()
+			st.DamageDealt = st.DamageDealt + player.stats.damage_dealt_to_champions
+			st.DamageReceived = st.DamageReceived + player.stats.damage_taken
+			if i <= 5:
+				st.TeamKillTotal =  st.TeamKillTotal + m.participants[0].stats.kills  + m.participants[1].stats.kills  + m.participants[2].stats.kills  + m.participants[3].stats.kills  + m.participants[4].stats.kills
+			else:
+				st.TeamKillTotal =  st.TeamKillTotal + m.participants[5].stats.kills  + m.participants[6].stats.kills  + m.participants[7].stats.kills  + m.participants[8].stats.kills  + m.participants[9].stats.kills
+			st.DoubleKills =  st.DoubleKills + player.stats.double_kills
+			st.TripleKills = st.TripleKills + player.stats.triple_kills
+			st.QuadraKills = st.QuadraKills + player.stats.quadra_kills
+			st.PentaKills = st.PentaKills + player.stats.penta_kills
 			st.save()
 		with open('olsrunner/matches/' + str(newgame.Number) + '.pk', 'wb') as outfile:
 			pickle.dump( m , outfile)
@@ -504,61 +521,84 @@ def generatecodes(request):
 		i = i + 1
 		savecode = TourneyCode()
 		weekcount = weekcount + 1
-
+'''
+def swaprift1s(request):
+	rift1s = TourneyCode.objects.filter(rift= 1)
+	for code in rift1s:
+		print(code)
+		t1temp = code.team1
+		print(t1temp)
+		code.team1 = code.team2
+		code.team2 = t1temp
+		code.save()
+	return HttpResponse("games swipped")
+'''
   #                                                       CAPTAIN VIEWS
 
 
-
-
+@csrf_exempt
 def callback(request):
-	posted = request.POST
+	print("received request")
+	posted = request.body.decode('utf-8')
+	#print(dir(posted))
 	print(posted)
-	gameparse = json.loads(posted[0])
-	print(gameparse['winningTeam'])
+	#with open('olsrunner/tests/gabetest.pk', 'wb') as outfile:
+	#	pickle.dump( posted , outfile)
+	gameparse = json.loads(posted)
+	riotapi.set_region("NA")
+	#print(gameparse['shortCode'])
+	try:
+		m = riotapi.get_match(gameparse['gameId'], tournament_code=gameparse['shortCode'])
+	except APIError:
+		return HttpResponseServerError("match was not yet published")
+	#print(gameparse)
 	newgame = Game()
 	code = TourneyCode.objects.get(code = gameparse['shortCode'])
-	newgame.team1 = code.team1
+	newgame.team1 = code.team1 #CAH
 	team1obj = Team.objects.get(teamID = newgame.team1)
-	newgame.team2 = code.team2
-	team2obj = Team.objects.get(teamID = newgame.team1)
+	newgame.team2 = code.team2  #MAG
+	team2obj = Team.objects.get(teamID = newgame.team2)
+	j = 0
 	for p in gameparse['winningTeam']:
-		if p.summonerId  == team1obj.CaptainID:
+		print(p)
+		if p['summonerId']  == team1obj.CaptainID:
 			newgame.winner = newgame.team1
 			break
-		if p.summonerId  == team1obj.Player1ID:
+		if p['summonerId']  == team1obj.Player1ID:
 			newgame.winner = newgame.team1
 			break
-		if p.summonerId  == team1obj.Player2ID:
+		if p['summonerId']  == team1obj.Player2ID:
 			newgame.winner = newgame.team1
 			break
-		if p.summonerId  == team1obj.Player3ID:
+		if p['summonerId']  == team1obj.Player3ID:
 			newgame.winner = newgame.team1
 			break
-		if p.summonerId  == team1obj.Player4ID:
+		if p['summonerId']  == team1obj.Player4ID:
 			newgame.winner = newgame.team1
 			break
-		if p.summonerId  == team2obj.CaptainID:
+		if p['summonerId']  == team2obj.CaptainID:
 			newgame.winner = newgame.team2
 			break
-		if p.summonerId  == team2obj.Player1ID:
+		if p['summonerId']  == team2obj.Player1ID:
 			newgame.winner = newgame.team2
 			break
-		if p.summonerId  == team2obj.Player2ID:
+		if p['summonerId']  == team2obj.Player2ID:
 			newgame.winner = newgame.team2
 			break
-		if p.summonerId  == team2obj.Player3ID:
+		if p['summonerId']  == team2obj.Player3ID:
 			newgame.winner = newgame.team2
 			break
-		if p.summonerId  == team2obj.Player4ID:
+		if p['summonerId']  == team2obj.Player4ID:
 			newgame.winner = newgame.team2
 			break
+		j = j+1
 	try:
-		newgame.Number = Game.objects.all().aggregate(Max('Number'))['Number'] + 1
+		newgame.Number = Game.objects.all().aggregate(Max('Number'))['Number__max'] + 1
 	except KeyError:
 		newgame.Number = 0
 	if newgame.team2 == newgame.winner:
 		loser = team1obj
-		winer = team2obj
+		winner = team2obj
 		position = 2
 	else:
 		winner = team1obj
@@ -566,38 +606,55 @@ def callback(request):
 		position = 1
 	addPoints(winner, loser, position)
 	if position == 1:
-		newgame.team1Player1 = gameparse['winningTeam'][0]
-		newgame.team1Player2 = gameparse['winningTeam'][1]
-		newgame.team1Player3 = gameparse['winningTeam'][2]
-		newgame.team1Player4 = gameparse['winningTeam'][3]
-		newgame.team1Player5 = gameparse['winningTeam'][4]
-		newgame.team2Player1 = gameparse['losingTeam'][0]
-		newgame.team2Player2 = gameparse['losingTeam'][1]
-		newgame.team2Player3 = gameparse['losingTeam'][2]
-		newgame.team2Player4 = gameparse['losingTeam'][3]
-		newgame.team2Player5 = gameparse['losingTeam'][4]
+		newgame.team1Player1 = gameparse['winningTeam'][0]['summonerId']
+		newgame.team1Player2 = gameparse['winningTeam'][1]['summonerId']
+		newgame.team1Player3 = gameparse['winningTeam'][2]['summonerId']
+		newgame.team1Player4 = gameparse['winningTeam'][3]['summonerId']
+		newgame.team1Player5 = gameparse['winningTeam'][4]['summonerId']
+		newgame.team2Player1 = gameparse['losingTeam'][0]['summonerId']
+		newgame.team2Player2 = gameparse['losingTeam'][1]['summonerId']
+		newgame.team2Player3 = gameparse['losingTeam'][2]['summonerId']
+		newgame.team2Player4 = gameparse['losingTeam'][3]['summonerId']
+		newgame.team2Player5 = gameparse['losingTeam'][4]['summonerId']
 	else:
-		newgame.team1Player1 = gameparse['losingTeam'][0]
-		newgame.team1Player2 = gameparse['losingTeam'][1]
-		newgame.team1Player3 = gameparse['losingTeam'][2]
-		newgame.team1Player4 = gameparse['losingTeam'][3]
-		newgame.team1Player5 = gameparse['losingTeam'][4]
-		newgame.team2Player1 = gameparse['winningTeam'][0]
-		newgame.team2Player2 = gameparse['winningTeam'][1]
-		newgame.team2Player3 = gameparse['winningTeam'][2]
-		newgame.team2Player4 = gameparse['winningTeam'][3]
-		newgame.team2Player5 = gameparse['winningTeam'][4]
+		newgame.team1Player1 = gameparse['losingTeam'][0]['summonerId']
+		newgame.team1Player2 = gameparse['losingTeam'][1]['summonerId']
+		newgame.team1Player3 = gameparse['losingTeam'][2]['summonerId']
+		newgame.team1Player4 = gameparse['losingTeam'][3]['summonerId']
+		newgame.team1Player5 = gameparse['losingTeam'][4]['summonerId']
+		newgame.team2Player1 = gameparse['winningTeam'][0]['summonerId']
+		newgame.team2Player2 = gameparse['winningTeam'][1]['summonerId']
+		newgame.team2Player3 = gameparse['winningTeam'][2]['summonerId']
+		newgame.team2Player4 = gameparse['winningTeam'][3]['summonerId']
+		newgame.team2Player5 = gameparse['winningTeam'][4]['summonerId']
 	
 	newgame.matchID = gameparse['gameId']
 	i = 0
-	riotapi.set_region("NA")
-	m = riotapi.get_match(gameparse['id'], True, tournament_code=gameparse['shortCode'])
 	for player in m.participants:
 		try:
-			st = Stats.objects.get(PlayerID=player.id)
+			if i==0:
+				st = Stats.objects.get(PlayerID=newgame.team1Player1)
+			if i==1:
+				st = Stats.objects.get(PlayerID=newgame.team1Player2)
+			if i==2:
+				st = Stats.objects.get(PlayerID=newgame.team1Player3)
+			if i==3:
+				st = Stats.objects.get(PlayerID=newgame.team1Player4)
+			if i==4:
+				st = Stats.objects.get(PlayerID=newgame.team1Player5)
+			if i==5:
+				st = Stats.objects.get(PlayerID=newgame.team2Player1)
+			if i==6:
+				st = Stats.objects.get(PlayerID=newgame.team2Player2)
+			if i==7:
+				st = Stats.objects.get(PlayerID=newgame.team2Player3)
+			if i==8:
+				st = Stats.objects.get(PlayerID=newgame.team2Player4)
+			if i==9:
+				st = Stats.objects.get(PlayerID=newgame.team2Player5)
 		except:
 			st = Stats()
-			st.PlayerID = player.id 
+			st.PlayerID = riotapi.get_summoner_by_name(player.summoner_name).id 
 		i= i+ 1
 		st.Kills = st.Kills + player.stats.kills
 		st.Deaths = st.Deaths + player.stats.deaths
@@ -607,7 +664,17 @@ def callback(request):
 		if player.stats.largest_critical_strike > st.LargestCrit:
 			st.LargestCrit = player.stats.largest_critical_strike
 		st.Creeps = st.Creeps + player.stats.minion_kills + player.stats.monster_kills
-		st.SecondsPlayed = st.SecondsPlayed + m.duration.total_seconds()/60
+		st.SecondsPlayed = st.SecondsPlayed + m.duration.total_seconds()
+		st.DamageDealt = st.DamageDealt + player.stats.damage_dealt_to_champions
+		st.DamageReceived = st.DamageReceived + player.stats.damage_taken
+		if i <= 5:
+			st.TeamKillTotal =  st.TeamKillTotal + m.participants[0].stats.kills  + m.participants[1].stats.kills  + m.participants[2].stats.kills  + m.participants[3].stats.kills  + m.participants[4].stats.kills
+		else:
+			st.TeamKillTotal =  st.TeamKillTotal + m.participants[5].stats.kills  + m.participants[6].stats.kills  + m.participants[7].stats.kills  + m.participants[8].stats.kills  + m.participants[9].stats.kills
+		st.DoubleKills =  st.DoubleKills + player.stats.double_kills
+		st.TripleKills = st.TripleKills + player.stats.triple_kills
+		st.QuadraKills = st.QuadraKills + player.stats.quadra_kills
+		st.PentaKills = st.PentaKills + player.stats.penta_kills
 		st.save()
 	with open('olsrunner/matches/' + str(newgame.Number) + '.pk', 'wb') as outfile:
 		pickle.dump( m , outfile)
@@ -618,20 +685,61 @@ def callback(request):
 
 def reschedule(request):
 	posted = request.POST
+	print(posted)
 	match = posted['match']
 	matchs = match.split('|')
 	weeks = Week.objects.all().order_by('startdate')
 	print(weeks)
+	#print(matchs[0])
+	#print(matchs[1])
 	try:
 		dateof = datetime.strptime(posted['date'], '%m/%d/%Y')
 	except ValueError:
 		dateof = datetime.strptime(posted['date'], '%b. %d, %Y')
-	try:
+	am = re.compile('[0-9]{1,2}:[0-9]{2} a.m.')
+	if am.match(posted['time']) is not None:
 		timeof = datetime.strptime(posted['time'], '%I:%M a.m.')
-
-	except ValueError:
+	pm = re.compile('[0-9]{1,2}:[0-9]{2} p.m.')
+	if pm.match(posted['time']) is not None:
 		timeof = datetime.strptime(posted['time'], '%I:%M p.m.')
 		timeof = timeof +timedelta(hours=12)
+	am = re.compile('[0-9]{1,2}:[0-9]{2} am')
+	if am.match(posted['time']) is not None:
+		timeof = datetime.strptime(posted['time'], '%I:%M am')
+	pm = re.compile('[0-9]{1,2}:[0-9]{2} pm')
+	if pm.match(posted['time']) is not None:
+		timeof = datetime.strptime(posted['time'], '%I:%M pm')
+		timeof = timeof +timedelta(hours=12)
+	am = re.compile('[0-9]{1,2}:[0-9]{2} AM')
+	if am.match(posted['time']) is not None:
+		timeof = datetime.strptime(posted['time'], '%I:%M AM')
+	pm = re.compile('[0-9]{1,2}:[0-9]{2} PM')
+	if pm.match(posted['time']) is not None:
+		timeof = datetime.strptime(posted['time'], '%I:%M PM')
+		timeof = timeof +timedelta(hours=12)
+	am = re.compile('[0-9]{1,2} a.m.')
+	if am.match(posted['time']) is not None:
+		timeof = datetime.strptime(posted['time'], '%I a.m.')
+	pm = re.compile('[0-9]{1,2} p.m.')
+	if pm.match(posted['time']) is not None:
+		timeof = datetime.strptime(posted['time'], '%I p.m.')
+		timeof = timeof +timedelta(hours=12)
+	am = re.compile('[0-9]{1,2} am')
+	if am.match(posted['time']) is not None:
+		timeof = datetime.strptime(posted['time'], '%I am')
+	pm = re.compile('[0-9]{1,2} pm')
+	if pm.match(posted['time']) is not None:
+		timeof = datetime.strptime(posted['time'], '%I pm')
+		timeof = timeof +timedelta(hours=12)
+	am = re.compile('[0-9]{1,2} AM')
+	if am.match(posted['time']) is not None:
+		timeof = datetime.strptime(posted['time'], '%I AM')
+	pm = re.compile('[0-9]{1,2} PM')
+	if pm.match(posted['time']) is not None:
+		timeof = datetime.strptime(posted['time'], '%I PM')
+		timeof = timeof +timedelta(hours=12)
+	if timeof is None:
+		return HttpResponse("time entry was not formatted properly, please use: 10:00 p.m. as an example ")
 	#timeof = timeof.strftime('%H:%M:%S')
 	#timeof = timeof.time
 	#dateof = dateof.strftime('%Y-%m-%d')
@@ -665,8 +773,8 @@ def reschedule(request):
 		week.L2game3Time = timeof
 		week.L2game3date = dateof
 	if week.L3game1t1==int(matchs[1]):
-		week.L0game1Time = timeof
-		week.L0game1date = dateof
+		week.L3game1Time = timeof
+		week.L3game1date = dateof
 	if week.L3game2t1==int(matchs[1]):
 		week.L3game2Time = timeof
 		week.L3game2date = dateof
@@ -676,15 +784,87 @@ def reschedule(request):
 	print("final check")
 	#import pdb; pdb.set_trace()
 	week.save()
-	print(connection.queries)
-	return HttpResponseRedirect('/ols/schedule')
+	#print(connection.queries)
+	return HttpResponseRedirect('/ols/schedule/')
 
 
 
 		#                                                     GENERAL VIEWS
 
+class StatsTable(tables.Table):
+	team = tables.Column(accessor='team', verbose_name='Team')
+	name = tables.Column(accessor='Name', verbose_name='IGN', order_by='name_lower')
+	kills = tables.Column(accessor='Kills', verbose_name='K')
+	death = tables.Column(accessor='Deaths', verbose_name='D')
+	assists = tables.Column(accessor='Assists',verbose_name='A')
+	kda = tables.Column(accessor='KDA', verbose_name='KDA ratio')
+	partic = tables.Column(accessor='participation', verbose_name='Kill Participation')
+	gold = tables.Column(accessor='Gold per minute', verbose_name='GPM')
+	games = tables.Column(accessor='Games Played', verbose_name='Games Played')
+	creeps = tables.Column(accessor='Creeps per minute', verbose_name='CS per minute')
+	multis = tables.Column(accessor='multis', verbose_name='T/Q/P', order_by=('p', 'q', 't'))
+	crit = tables.Column(accessor='Largest Critical Strike', verbose_name='Largest Critical')
+	fantasy = tables.Column(accessor='fantasy', verbose_name='Fantasy')
+	
+	
+
 def overallstats(request):
-	return HttpResponse("Error 404 <3 Matt")
+	players = Player.objects.all()
+	finalstats = []
+	for p in players:
+		ptemp = {}
+		for t in Team.objects.all():
+			if t.CaptainID == p.SummonerNumber:
+				ptemp['team']= t.teamName
+				break
+			if t.Player1ID == p.SummonerNumber:
+				ptemp['team']= t.teamName
+				break
+			if t.Player2ID == p.SummonerNumber:
+				ptemp['team']= t.teamName
+				break
+			if t.Player3ID == p.SummonerNumber:
+				ptemp['team']= t.teamName
+				break
+			if t.Player4ID == p.SummonerNumber:
+				ptemp['team']= t.teamName
+				break
+		ptemp['Name'] =  p.PlayerIGN
+		ptemp['name_lower'] = p.PlayerIGN.lower()
+		try:
+			s = Stats.objects.get(PlayerID= p.SummonerNumber)
+			ptemp['Kills'] = round(s.Kills/ s.GamesPlayed, 2)
+			ptemp['Deaths'] = round(s.Deaths /s.GamesPlayed, 2)
+			ptemp['Assists'] = round(s.Assists / s.GamesPlayed, 2)
+			ptemp['Gold per minute'] = round((s.GoldTotal * 60)/s.SecondsPlayed,2)
+			ptemp['Games Played'] = s.GamesPlayed
+			ptemp['Largest Critical Strike'] = s.LargestCrit
+			ptemp['Creeps per minute'] = round((s.Creeps * 60)/s.SecondsPlayed, 2)
+			ptemp['participation'] = str(round((s.Kills + s.Assists)/s.TeamKillTotal * 100, 1)) + "%"
+			ptemp['t'] = s.TripleKills
+			ptemp['q'] = s.QuadraKills
+			ptemp['p'] = s.PentaKills
+			ptemp['fantasy'] = (s.Kills * 2) + (s.Deaths * -0.5) + (s.Assists * 1.5) + (s.Creeps * .01) + (s.TripleKills * 2) + (s.QuadraKills * 5) + (s.PentaKills * 10)
+			ptemp['multis'] = str(s.TripleKills) + "/" + str(s.QuadraKills) + "/" + str(s.PentaKills)
+			try:
+				ptemp['KDA'] = round((s.Kills + s.Assists)/s.Deaths, 2)
+			except ZeroDivisionError:
+				ptemp['KDA'] = 420
+		except:
+			'''ptemp['Kills'] = 0
+			ptemp['Deaths'] = 0
+			ptemp['Assists'] = 0
+			ptemp['Gold per minute'] = 0
+			ptemp['Games Played'] = 0
+			ptemp['Largest Critical Strike'] = 0
+			ptemp['Creeps per minute'] = 0
+			ptemp['KDA'] = 0
+			ptemp['participatio']
+			'''
+		finalstats.append(ptemp)
+	statst = StatsTable(finalstats, order_by="team")
+	RequestConfig(request, paginate=False).configure(statst)
+	return render(request, "overallstats.html", {"stats": statst})
 
 
 def player_stats(request, player):
@@ -749,9 +929,12 @@ def player_stats(request, player):
 	tquery = Q(CaptainID=play.SummonerNumber) | Q(Player1ID=play.SummonerNumber) |  Q(Player2ID=play.SummonerNumber) |  Q(Player3ID=play.SummonerNumber) |  Q(Player4ID=play.SummonerNumber)
 	t = Team.objects.get(tquery)
 	advancedstats = {}
-	advancedstats['KDA'] = (s.Kills + s.Assists) / s.Deaths
-	advancedstats['Csmin'] = s.Creeps / s.SecondsPlayed
-	advancedstats['GPM'] = s.GoldTotal / s.SecondsPlayed
+	try:
+		advancedstats['KDA'] = (s.Kills + s.Assists) / s.Deaths
+	except:
+		advancedstats['KDA'] = 420
+	advancedstats['Csmin'] = (s.Creeps* 60) / s.SecondsPlayed
+	advancedstats['GPM'] = (s.GoldTotal* 60) / s.SecondsPlayed
 
 	return HttpResponse(render(request, 'playerStats.html', {'player' :play, 'stats': s, 'team': t, 'games': gm, 'astats':advancedstats} ))
 
@@ -816,23 +999,46 @@ def team_stats(request, team):
 	stats.append(p5s)
 	print(players)
 	teamavgs = {}
-	games = Game.objects.filter(Q(team1=t.teamID) | Q(team2 = t.teamID)) 
+	games = Game.objects.filter(Q(team1=t.teamID) | Q(team2 = t.teamID)).order_by('-Number') 
 	gameslist= []
+	riotapi.set_region("NA")
 	for g in games:
 		team1 = Team.objects.get(teamID= g.team1)
 		team2 = Team.objects.get(teamID= g.team2)
 		if g.winner == t.teamID:
 			win = "Won"
 		else:
-			win = "Lose"
-		teaminfo ={"t1": team1, "t2":team2, "won": win, "game": g}
-		print(teaminfo)
+			win = "Lost"
+		with open(str(g.filename), 'rb') as infile:
+			game = pickle.load(infile)
+		if g.team1 == t.teamID:
+			b1 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.red_team.bans[0].champion.image.link
+			b2 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.red_team.bans[1].champion.image.link
+			b3 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.red_team.bans[2].champion.image.link
+			p1 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.blue_team.participants[0].champion.image.link
+			p2 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.blue_team.participants[1].champion.image.link
+			p3 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.blue_team.participants[2].champion.image.link
+			p4 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.blue_team.participants[3].champion.image.link
+			p5 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.blue_team.participants[4].champion.image.link
+		else:
+			b1 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.blue_team.bans[0].champion.image.link
+			b2 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.blue_team.bans[1].champion.image.link
+			b3 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.blue_team.bans[2].champion.image.link
+			p1 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.red_team.participants[0].champion.image.link
+			p2 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.red_team.participants[1].champion.image.link
+			p3 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.red_team.participants[2].champion.image.link
+			p4 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.red_team.participants[3].champion.image.link
+			p5 = "http://ddragon.leagueoflegends.com/cdn/6.1.1/img/champion/" + game.red_team.participants[4].champion.image.link
+		teaminfo ={"t1": team1, "t2":team2, "won": win, "game": g, "ban1" : b1, "ban2": b2, "ban3": b3, "player1": p1, "player2": p2, "player3": p3, "player4": p4, "player5": p5 }
+		#print(teaminfo)
+
 		gameslist.append(teaminfo)
 	print(t.teamName)
 	return HttpResponse(render(request, 'teamStats.html', {'p' :players, 's': stats, 't': t, 'gs': gameslist} ))
 def match(request, match_num):
 	try:
 		m = Game.objects.get(Number=match_num)
+		print(m.filename)
 	except ObjectDoesNotExist:
 		return HttpResponse("There is no match with this ID")
 	with open(str(m.filename), 'rb') as infile:

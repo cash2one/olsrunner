@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
 import os
-
+from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -20,6 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = '0/B+10r8~y@c9]{&8w`Hxd9[<WqFF1;|3:f|sx7;SS9~lb950a8'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -36,10 +37,14 @@ ALLOWED_HOSTS = ["www.lol-at-pitt.com"]
 
 LOGIN_REDIRECT_URL = '/ols/schedule/'
 
+APPEND_SLASH=True
 
 # Application definition
 
+
+TEMPLATE_CONTEXT_PROCESSORS += ('django.core.context_processors.request',)
 INSTALLED_APPS = [
+    'django_tables2',
     'olsrunner',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -76,6 +81,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            
         },
     },
 ]

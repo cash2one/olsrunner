@@ -71,13 +71,19 @@ class Stats(models.Model):
 	LargestCrit = models.IntegerField(default=0, blank=True)
 	Creeps = models.IntegerField(default=0, blank=True)
 	SecondsPlayed = models.IntegerField(default=0, blank=True)
+	DamageDealt = models.IntegerField(default=0, blank=True)
+	DamageReceived = models.IntegerField(default=0, blank=True)
+	TeamKillTotal = models.IntegerField(default=0, blank=True)
+	DoubleKills = models.IntegerField(default=0, blank=True)
+	TripleKills = models.IntegerField(default=0, blank=True)
+	QuadraKills = models.IntegerField(default=0, blank=True)
+	PentaKills = models.IntegerField(default=0, blank=True) 
 	def __str__(self):
 		try:
 			p =Player.objects.get(SummonerNumber=self.PlayerID)
 			return p.PlayerIGN
 		except ObjectDoesNotExist:
 			riotapi.set_region("NA")
-			riotapi.set_api_key("b41d4581-0400-4c37-99b1-418cd2f6d7ca")
 			s= riotapi.get_summoner_name(self.PlayerID)
 			return s
 

@@ -887,6 +887,9 @@ class Ban(cassiopeia.type.core.common.CassiopeiaObject):
         """int    which pick turn this ban was on"""
         return self.data.pickTurn
 
+    def replace(self, champname):
+        """function    this replaces the ban in case of proxy picks"""
+        self.data.championId = cassiopeia.riotapi.get_champion_by_name(champname).id
 
 @cassiopeia.type.core.common.inheritdocs
 class Frame(cassiopeia.type.core.common.CassiopeiaObject):

@@ -15,11 +15,12 @@ urlpatterns = [
 	url(r'^addMatch/', views.addMatch, name="Add Match by ID"),
 	url(r'^generatecodes/$', views.generatecodes,),
 	url('^', include('django.contrib.auth.urls')),
+	#url(r'^swipswap/$', views.swaprift1s,),
 
 	#captain pages
 	
 	url(r'^reschedule/$', views.reschedule,),
-	url(r'^codeused/$', views.callback,),
+	url(r'^codeused$', views.callback,),
 
 	#player pages
 	url(r'^standings/', views.standings, name="Current Split OLS Standings"),

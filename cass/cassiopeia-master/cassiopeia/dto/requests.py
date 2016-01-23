@@ -4,6 +4,9 @@ Handles making HTTP requests to the REST API and converting the results into a u
 
 import requests
 import json
+import urllib.parse
+import urllib.request
+import urllib.error
 
 import cassiopeia.type.api.exception
 import cassiopeia.type.api.rates
@@ -28,7 +31,7 @@ api_versions = {
 api_key = ""
 tournament_api_key = ""
 region = ""
-print_calls = False
+print_calls = True
 rate_limiter = None
 tournament_rate_limiter = None
 proxy = {}
@@ -58,13 +61,16 @@ def request(method, address, params=None, static=False, include_base=True, tourn
 
     # Add the API key to headers or request params depending on the API
     headers = {}
+    #print(key_in_header)
     if params is None:
         params = {}
     if key_in_header:
         headers['X-Riot-Token'] = tournament_api_key if tournament else api_key
     else:
         params["api_key"] = tournament_api_key if tournament else api_key
-
+    #print(params)
+    encoded_params = urllib.parse.urlencode(params)
+    #print(encoded_params)
     # Do we have json data in the request body? If yes encode it
     if method.upper() in ('POST', 'PUT') and 'data' in kwargs:
         if not isinstance(kwargs['data'], str):
@@ -73,19 +79,19 @@ def request(method, address, params=None, static=False, include_base=True, tourn
 
     # Build and send the request
     if include_base:
-        url = "https://{server}.api.pvp.net/api/lol/{region}/{address}".format(
-                server=server, region=rgn, address=address)
+        url = "https://{server}.api.pvp.net/api/lol/{region}/{address}?{params}".format(
+                server=server, region=rgn, address=address, params=encoded_params)
     else:
         url = address
 
     limiter = tournament_rate_limiter if tournament else rate_limiter
     response = limiter.call(execute_request, method, url, params=params, headers=headers, **kwargs) if limiter \
         else execute_request(method, url, params=params, headers=headers, **kwargs)
-    print(response)
-    print(dir(response))
-    print(response.content)
-    print(response.reason)
-    print(response.request)
+    #print(response)
+    #print(dir(response))
+    #print(response.content)
+    #print(response.reason)
+    #print(response.request)
     if not response.ok:
         # Reset rate limiter and retry on 429 (rate limit exceeded)
         if response.status_code == 429 and limiter:
@@ -101,9 +107,12 @@ def request(method, address, params=None, static=False, include_base=True, tourn
     return response.json() if len(response.text) is not 0 else None
 
 
-def get(address, **kwargs):
+def get(address, *args, **kwargs):
     """ Performs a get request, see `request` for documentation """
-    return request('get', address, **kwargs)
+    #print(args)
+    #if args[1] :
+    #    return request('get', address, params= args[0],static= args[1] **kwargs)
+    return request('get', address, *args, **kwargs)
 
 
 def post(address, **kwargs):

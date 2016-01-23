@@ -13,4 +13,6 @@ Runs the OLS website
 
 -Must run the custom cassiopeia install in this repo
 
+-django-tables2 https://github.com/bradleyayers/django-tables2
+
 -Making all the migrations into a sqlite db
